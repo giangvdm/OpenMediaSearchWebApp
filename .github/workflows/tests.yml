@@ -1,0 +1,64 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      # Setup MongoDB service
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongo --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Run Docker Compose
+      env:
+        MONGODB_USER: ${{ secrets.MONGODB_USER }}
+        MONGODB_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
+        JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        MONGO_URI: mongodb://${{ secrets.MONGODB_USER }}:${{ secrets.MONGODB_PASSWORD }}@oms-db:27017/openmediasearch?authSource=admin
+      run: docker-compose up -d
+
+    - name: Install server dependencies
+      run: npm ci
+      
+    - name: Install client dependencies
+      working-directory: ./client
+      run: npm ci --legacy-peer-dep
+    
+    - name: Run backend tests
+      run: npm test
+      env:
+        CI: true
+        MONGO_URI: mongodb://localhost:27017/test_db
+        JWT_SECRET: test_jwt_secret
+    
+    - name: Run client tests
+      working-directory: ./client
+      run: npm test
+      env:
+        CI: true

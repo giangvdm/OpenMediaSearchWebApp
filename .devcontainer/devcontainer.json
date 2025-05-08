@@ -1,0 +1,21 @@
+{
+    "name": "Open Media Search",
+    "dockerComposeFile": "../docker-compose.dev.yml",
+    "service": "oms-app",
+    "workspaceFolder": "/app",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash"
+            }
+        },
+        "extensions": [
+            "dbaeumer.vscode-eslint",
+            "esbenp.prettier-vscode",
+            "mongodb.mongodb-vscode"
+        ]
+    },
+    "postCreateCommand": "bash .devcontainer/setup.sh",
+    "forwardPorts": [5173, 5000, 27017],
+    "remoteUser": "node"
+}
